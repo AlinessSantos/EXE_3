@@ -44,6 +44,7 @@ public:
 
     bool check_win(char player) {
         // Verificar se o jogador atual venceu o jogo
+        
     }
 
     bool check_draw() {
@@ -88,11 +89,15 @@ private:
 int main() {
     // Inicializar o jogo e os jogadores
     TicTacToe jogo;
-    jogo.display_board();
-    jogo.display_board();
+    //jogo.display_board();
+    Player invocador1(jogo, 'X', "sequential");
+    Player invocador2(jogo, 'O', "sequential");
     // Criar as threads para os jogadores
-
+    thread i1(&Player::play, &invocador1);
+    thread i2(&Player::play, &invocador1);
     // Aguardar o término das threads
+    i1.join();
+    i2.join();
 
     // Exibir o resultado final do jogo
 
