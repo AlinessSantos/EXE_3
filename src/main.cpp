@@ -3,6 +3,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <array>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 // Classe TicTacToe
@@ -14,6 +16,7 @@ private:
     char current_player; // Jogador atual ('X' ou 'O')
     bool game_over; // Estado do jogo
     char winner; // Vencedor do jogo
+    bool inicio;
 
 public:
     TicTacToe() {
@@ -22,7 +25,8 @@ public:
             this->board[i] = {' ', ' ', ' '};
         }
         this->game_over = false;
-        this->winner = 'z';
+        this->winner = 'Z';
+        this->inicio = true;
     }
 
     void display_board() {
@@ -41,35 +45,73 @@ public:
     bool make_move(char player, int row, int col) {
         // Implementar a lógica para realizar uma jogada no tabuleiro
         // Utilizar mutex para controle de acesso
+        //cout << "player " << player << "comecou " << endl;
+        unique_lock<mutex> lock(this->board_mutex);    
+        if(this->inicio){
+            if(this->board[row][col]== ' '){
+                this->board[row][col]= player;
+                this->display_board();
+                this->inicio = false;
+                if(player == 'X') this->current_player = 'O';
+                else this->current_player = 'X';
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                return true;
+            }
+        }else {
         // Utilizar variável de condição para alternância de turnos
+
+        if(player!=current_player) turn_cv.wait(lock);
+        if(this->game_over) return false;
+        if(this->board[row][col]== ' '){
+            this->board[row][col]= player;
+            this->display_board();
+            if(this->check_win(player)){
+                this->winner = this->current_player;
+                this->game_over =true;
+            }else if(this->check_draw()){
+                this->winner = 'D';
+                this->game_over = true;
+            }
+            if(this->current_player == 'X') this->current_player = 'O';
+            else this->current_player = 'X';
+            turn_cv.notify_one();
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            return true;
+        }
+        // tentar fazer movimento, se nao for possivel, checa empate
+        // se fizer movimento, checar vitoria
+        // printa tabuleiro
+        }
+        return false;
     }
 
     bool check_win(char player) {
         // Verificar se o jogador atual venceu o jogo
-        char cp= this->current_player;
+        char cp = player;
         for(int i=0; i<3; i++){
             //testa linhas
             if(((this->board[i][0] == cp)&&(this->board[i][1]== cp)&&(this->board[i][2]== cp))||
                 //testa colunas
                ((this->board[0][i] == cp)&&(this->board[1][i]== cp)&&(this->board[2][i]== cp))){
-                this->winner = this->current_player;
-                this->game_over =true;
+                return true;
             }
         }
         //testa diagonais
         if(((this->board[0][0] == cp)&&(this->board[1][1]== cp)&&(this->board[2][2]== cp))||
            ((this->board[2][0] == cp)&&(this->board[1][1]== cp)&&(this->board[0][2]== cp))){
-            this->winner = this->current_player;
-            this->game_over =true;
+            return true;
         }
-        return (this->winner == current_player);
+        return false;
     }
 
     bool check_draw() {
         // Verificar se houve um empate
-        if((game_over)&&(winner=='z')) 
-            this->winner= 'D';
-        return (this->winner == 'D');
+        for(int i=0; i<3; i++){
+            for(int j=0; j<3; j++){
+                if(this->board[i][j]==' ') return false;     
+            }
+        }
+        return true;
     }
 
     bool is_game_over() {
@@ -96,41 +138,50 @@ public:
         : game(g), symbol(s), strategy(strat) {}
 
     void play() {
-        if(strategy == "sequential"){
-            this->play_sequential();
-        }else if(strategy == "random"){
-            this->play_random();
+        while(!game.is_game_over()){
+            if(strategy == "sequential"){
+                this->play_sequential();
+            }else if(strategy == "random"){
+                this->play_random();
+            }
         }
-        // Executar jogadas de acordo com a estratégia escolhida
     }
+        // Executar jogadas de acordo com a estratégia escolhida
 
 private:
     void play_sequential() {
         // Implementar a estratégia sequencial de jogadas
-        int row=0, col=0;
-
-        //while()
-        this->game.make_move(symbol, row, col);
+        for (int i=0; i<3; i++) {
+            for (int j=0; j<3; j++) {
+                if(this->game.make_move(this->symbol, i, j)) return ;
+            }
+        }
     }
 
     void play_random() {
         // Implementar a estratégia aleatória de jogadas
         int row, col;
-
-        this->game.make_move(symbol, row, col);
+        while(!this->game.is_game_over()){
+            row = rand() % 3;
+            col = rand() % 3;
+            if (game.make_move(this->symbol, row, col)) return;
+        }
     }
 };
 
 // Função principal
 int main() {
+    unsigned seed = time(0);
+    srand(seed);
     // Inicializar o jogo e os jogadores
     TicTacToe jogo;
     //jogo.display_board();
-    Player invocador1(jogo, 'X', "sequential");
-    Player invocador2(jogo, 'O', "sequential");
+    Player invocador1(jogo, 'X', "random");
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    Player invocador2(jogo, 'O', "random");
     // Criar as threads para os jogadores
     thread i1(&Player::play, &invocador1);
-    thread i2(&Player::play, &invocador1);
+    thread i2(&Player::play, &invocador2);
     // Aguardar o término das threads
     i1.join();
     i2.join();
@@ -140,6 +191,5 @@ int main() {
         cout << "Empate!" << endl; 
     } else 
         cout << "O jogador " << jogo.get_winner() << " ganhou!" << endl;
-
     return 0;
 }
