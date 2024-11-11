@@ -21,6 +21,8 @@ public:
         for(int i=0; i<3; i++){
             this->board[i] = {' ', ' ', ' '};
         }
+        this->game_over = false;
+        this->winner = 'z';
     }
 
     void display_board() {
@@ -44,20 +46,42 @@ public:
 
     bool check_win(char player) {
         // Verificar se o jogador atual venceu o jogo
-        
+        char cp= this->current_player;
+        for(int i=0; i<3; i++){
+            //testa linhas
+            if(((this->board[i][0] == cp)&&(this->board[i][1]== cp)&&(this->board[i][2]== cp))||
+                //testa colunas
+               ((this->board[0][i] == cp)&&(this->board[1][i]== cp)&&(this->board[2][i]== cp))){
+                this->winner = this->current_player;
+                this->game_over =true;
+            }
+        }
+        //testa diagonais
+        if(((this->board[0][0] == cp)&&(this->board[1][1]== cp)&&(this->board[2][2]== cp))||
+           ((this->board[2][0] == cp)&&(this->board[1][1]== cp)&&(this->board[0][2]== cp))){
+            this->winner = this->current_player;
+            this->game_over =true;
+        }
+        return (this->winner == current_player);
     }
 
     bool check_draw() {
         // Verificar se houve um empate
+        if((game_over)&&(winner=='z')) 
+            this->winner= 'D';
+        return (this->winner == 'D');
     }
 
     bool is_game_over() {
         // Retornar se o jogo terminou
+        return this->game_over;
     }
 
     char get_winner() {
         // Retornar o vencedor do jogo ('X', 'O', ou 'D' para empate)
+        return this->winner;
     }
+        
 };
 
 // Classe Player
@@ -72,16 +96,28 @@ public:
         : game(g), symbol(s), strategy(strat) {}
 
     void play() {
+        if(strategy == "sequential"){
+            this->play_sequential();
+        }else if(strategy == "random"){
+            this->play_random();
+        }
         // Executar jogadas de acordo com a estratégia escolhida
     }
 
 private:
     void play_sequential() {
         // Implementar a estratégia sequencial de jogadas
+        int row=0, col=0;
+
+        //while()
+        this->game.make_move(symbol, row, col);
     }
 
     void play_random() {
         // Implementar a estratégia aleatória de jogadas
+        int row, col;
+
+        this->game.make_move(symbol, row, col);
     }
 };
 
@@ -100,6 +136,10 @@ int main() {
     i2.join();
 
     // Exibir o resultado final do jogo
+    if(jogo.get_winner() == 'D'){
+        cout << "Empate!" << endl; 
+    } else 
+        cout << "O jogador " << jogo.get_winner() << " ganhou!" << endl;
 
     return 0;
 }
