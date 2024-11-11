@@ -17,10 +17,14 @@ private:
 public:
     TicTacToe() {
         // Inicializar o tabuleiro e as variáveis do jogo
+        //for(int i=0; i<3, i++){
+//
+        //}
     }
 
     void display_board() {
         // Exibir o tabuleiro no console
+        //for(i)
     }
 
     bool make_move(char player, int row, int col) {
