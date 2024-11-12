@@ -31,21 +31,20 @@ public:
 
     void display_board() {
         // Exibir o tabuleiro no console
-        cout << "-------------" << endl;
         for(int i=0; i<3; i++){
             for(int j=0; j<3; j++){
-                cout << "| "<< this->board[i][j] << " ";        
+                cout << " "<< this->board[i][j];
+                if(j<2) cout << " |";    
             }
-            cout << "| "<< endl;
-            cout << "-------------" << endl;
+            if(i<2) cout << endl << "-----------" << endl;
         }
-        cout << endl;
+        cout << endl << endl;
+        if(winner == 'Z') cout << "Courrent player " << this->current_player << endl << endl;
     }
 
     bool make_move(char player, int row, int col) {
         // Implementar a lógica para realizar uma jogada no tabuleiro
         // Utilizar mutex para controle de acesso
-        //cout << "player " << player << "comecou " << endl;
         unique_lock<mutex> lock(this->board_mutex);    
         if(this->inicio){
             if(this->board[row][col]== ' '){
@@ -64,7 +63,6 @@ public:
         if(this->game_over) return false;
         if(this->board[row][col]== ' '){
             this->board[row][col]= player;
-            this->display_board();
             if(this->check_win(player)){
                 this->winner = this->current_player;
                 this->game_over =true;
@@ -74,6 +72,7 @@ public:
             }
             if(this->current_player == 'X') this->current_player = 'O';
             else this->current_player = 'X';
+            this->display_board();
             turn_cv.notify_one();
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             return true;
@@ -188,8 +187,8 @@ int main() {
 
     // Exibir o resultado final do jogo
     if(jogo.get_winner() == 'D'){
-        cout << "Empate!" << endl; 
+        cout << "Empate!" << endl << endl; 
     } else 
-        cout << "O jogador " << jogo.get_winner() << " ganhou!" << endl;
+        cout << "O jogador " << jogo.get_winner() << " ganhou!" << endl << endl;
     return 0;
 }
